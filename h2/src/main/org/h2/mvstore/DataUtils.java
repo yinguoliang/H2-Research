@@ -523,11 +523,17 @@ public class DataUtils {
 
     /**
      * Get the offset from the position.
-     *
      * @param pos the position
      * @return the offset
      */
     public static int getPageOffset(long pos) {
+        /*
+         * pos高38位是chunk id
+         * 低6位是size + type
+         * 中间的32位是page相对于chunk的偏移量
+         * 
+         * 这里只需要将pos右移6位，然后转为int即可（chunk id部分被丢弃了）
+         */
         return (int) (pos >> 6);
     }
 

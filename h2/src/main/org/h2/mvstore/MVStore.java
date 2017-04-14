@@ -1345,6 +1345,13 @@ public class MVStore {
             if (r == null) {
                 // page was not cached: read the data
                 Chunk c = getChunk(pos);
+                /*
+                 * 计算page在文件中的位置（偏移量）
+                 * 计算方法：首先通过chunk,拿到chunk起点
+                 * (chunk.block记录了chunk起始的block num,然后直接乘以block_size即可)
+                 * (这里可以看到,block_size是不能随便变的)
+                 * 然后根据pos拿到page对chunk的偏移量，两个相加即可。
+                 */
                 long filePos = c.block * BLOCK_SIZE;
                 filePos += DataUtils.getPageOffset(pos);
                 if (filePos < 0) {

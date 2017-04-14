@@ -15,6 +15,11 @@ import org.h2.util.New;
 
 /**
  * A page (a node or a leaf).
+ * <font color=red><strong>
+ * B树的Node节点<br>
+ * 因为是B树，所以非叶子节点也存储数据<br>
+ * 因此page定义了三个属性keys,values,children
+ * </strong></font>
  * <p>
  * For b-tree nodes, the key at a given index is larger than the largest key of
  * the child at the same index.
@@ -132,6 +137,9 @@ public class Page {
         }
         MVStore store = map.store;
         if (store != null) {
+            /*
+             * 向store注册一下，这样store就知道内存中有数据需要刷到磁盘了
+             */
             store.registerUnsavedPage(p.memory);
         }
         return p;
@@ -172,22 +180,36 @@ public class Page {
      */
     static Page read(FileStore fileStore, long pos, MVMap<?, ?> map,
             long filePos, long maxPos) {
+        /*
+         * 从文件中读取一个Page的内容
+         */
         ByteBuffer buff;
+        /*
+         * 从position中，拿到page的最大长度，用来构造ByteBuffer
+         */
         int maxLength = DataUtils.getPageMaxLength(pos);
         if (maxLength == DataUtils.PAGE_LARGE) {
+            /*
+             * 最大长度太长了，保存在磁盘上了，需要从磁盘上读取
+             */
             buff = fileStore.readFully(filePos, 128);
             maxLength = buff.getInt();
             // read the first bytes again
         }
+        /*
+         * 修正maxLength，因为入参也指定了maxPos，我们不应该超过他
+         */
         maxLength = (int) Math.min(maxPos - filePos, maxLength);
-        int length = maxLength;
-        if (length < 0) {
+        if (maxLength < 0) {
             throw DataUtils.newIllegalStateException(
                     DataUtils.ERROR_FILE_CORRUPT,
                     "Illegal page length {0} reading at {1}; max pos {2} ",
-                    length, filePos, maxPos);
+                    maxLength, filePos, maxPos);
         }
-        buff = fileStore.readFully(filePos, length);
+        /*
+         * 读磁盘数据
+         */
+        buff = fileStore.readFully(filePos, maxLength);
         Page p = new Page(map, 0);
         p.pos = pos;
         int chunkId = DataUtils.getPageChunkId(pos);
@@ -316,6 +338,14 @@ public class Page {
      * If the key was found, the returned value is the index in the key array.
      * If not found, the returned value is negative, where -1 means the provided
      * key is smaller than any keys in this page. See also Arrays.binarySearch.
+     * 
+     * 参考Arrays.binarySearch方法：二分查找<br>
+     * 二分查找返回的结果，<br>
+     *  -->如果>0,则表示找到了数据<br>
+     *  -->如果<0,则表示插入点位置<br>
+     *  -->如果=-1,表示插入值比当前所有值都小
+     * 
+     *  
      *
      * @param key the key
      * @return the value or null
@@ -327,22 +357,30 @@ public class Page {
         // the default value is used
         int x = cachedCompare - 1;
         if (x < 0 || x > high) {
-            x = high >>> 1;
+            x = high >>> 1;//取中位数，因为low=0，所以简写了(low+high)>>>1
         }
         Object[] k = keys;
         while (low <= high) {
             int compare = map.compare(key, k[x]);
+            //key大于中位key，后面应该查(x+1,high)范围
             if (compare > 0) {
                 low = x + 1;
-            } else if (compare < 0) {
+            }
+            //key小于中位key,后面需要查(low, x-1)范围
+            else if (compare < 0) {
                 high = x - 1;
-            } else {
+            }
+            //key等于中位key,命中,返回下标
+            else {
                 cachedCompare = x + 1;
                 return x;
             }
+            //没有命中时，二分查找剩下的一半
             x = (low + high) >>> 1;
         }
         cachedCompare = low;
+        //如果最终没有命中目标，返回插值点下标
+        //插值点的下标应该在(-1,-len-1)之间
         return -(low + 1);
 
         // regular binary search (without caching)
@@ -370,7 +408,16 @@ public class Page {
     Page split(int at) {
         return isLeaf() ? splitLeaf(at) : splitNode(at);
     }
-
+    /**
+     * 分裂page，分裂后，原page的数据会少一半（左半部分留下了）
+     * 返回的是新page
+     * 
+     * 因为是叶子结点，原来的树结构实际上还是没变的
+     * 父结点还是指向原来的子结点，只是多出来了一个新的page对象
+     * 
+     * @param at
+     * @return
+     */
     private Page splitLeaf(int at) { //小于split key的放在左边，大于等于split key放在右边
         int a = at, b = keys.length - a;
         Object[] aKeys = new Object[a];
@@ -380,7 +427,6 @@ public class Page {
         keys = aKeys;
         Object[] aValues = new Object[a];
         Object[] bValues = new Object[b];
-        bValues = new Object[b]; //多于的
         System.arraycopy(values, 0, aValues, 0, a);
         System.arraycopy(values, a, bValues, 0, b);
         values = aValues;
@@ -560,6 +606,18 @@ public class Page {
      * @param value the value
      */
     public void insertLeaf(int index, Object key, Object value) {
+        /*
+         * byYYY: 将数据插入到叶子节点中，page是一个B-树
+         * B-树非叶子节点也存储数据，且是有序的
+         * 根据规则，B-树的数据插入，都是先插入到叶子结点上，然后在根据性质，判断是否会分裂
+         * 分裂的的数据会向上冒，使得树不断的向上（根部）生长。
+         * */
+        /*
+         * byYYY:这个方法将(k,v)数据插入index处
+         *   index是之前通过二分查找获得的插入点位置
+         *   因为keys和values都是数组，需要原数组将index位置让出来
+         *   所以会通过System.arraycopy来移动数组内容。
+         * */
         int len = keys.length + 1;
         Object[] newKeys = new Object[len];
         DataUtils.copyWithGap(keys, newKeys, len - 1, index);
@@ -644,6 +702,19 @@ public class Page {
      * @param maxLength the maximum length
      */
     void read(ByteBuffer buff, int chunkId, int offset, int maxLength) {
+        /*
+         * 按照page的磁盘格式，读取page内容
+         * page格式
+         *      int     page_length
+         *      short   check_value,
+         *      vint    map_id
+         *      vint    key_count
+         *      byte    page_type:0--leaf 1--node
+         *      [*]     孩子节点的pos( key_count + 1 个Long)
+         *      [*]     孩子节点的孩子的个数
+         *      [*]     keys
+         *      [*]     values
+         */
         int start = buff.position();
         int pageLength = buff.getInt();
         if (pageLength > maxLength || pageLength < 4) {
@@ -723,24 +794,47 @@ public class Page {
      * @return the position of the buffer just after the type
      */
     private int write(Chunk chunk, WriteBuffer buff) {
+        /*
+         * 将当前的page写到buff中
+         * page格式：
+         *      int     page_length
+         *      short   check_value,
+         *      vint    map_id
+         *      vint    key_count
+         *      byte    page_type:0--leaf 1--node
+         *      [*]     孩子节点的pos( key_count + 1 个Long)
+         *      [*]     孩子节点的孩子的个数
+         *      [*]     keys
+         *      [*]     values
+         */
         int start = buff.position();
         int len = keys.length;
         int type = children != null ? DataUtils.PAGE_TYPE_NODE
                 : DataUtils.PAGE_TYPE_LEAF;
-        buff.putInt(0).
-            putShort((byte) 0).
-            putVarInt(map.getId()).
-            putVarInt(len);
+        buff.putInt(0).             //1. page length,这里先置0,后面算出长度时再回写
+            putShort((byte) 0).     //2. check value
+            putVarInt(map.getId()). //3. map id
+            putVarInt(len);         //4. key count
+        /*
+         * 这里记录一下节点type的位置，后面如有有压缩，type还是会变的
+         */
         int typePos = buff.position();
-        buff.put((byte) type);
+        buff.put((byte) type);      //5. page type
         if (type == DataUtils.PAGE_TYPE_NODE) {
+            //6. key_count + 1个Long(children的pos)
             writeChildren(buff); //此时pagePos可能为0，在writeUnsavedRecursive中再回填一次
+            //7. key_count + 1个VLong(children的key的个数)
             for (int i = 0; i <= len; i++) { //keys.length + 1 才等于 children.length
                 buff.putVarLong(children[i].count);
             }
         }
+        /*
+         * 只压缩keys和values,所以压缩的位置从这里开始
+         */
         int compressStart = buff.position();
+        //8. 将keys写入buff
         map.getKeyType().write(buff, keys, len, true); //第4个参数目前未使用
+        //9. 将values写入buff
         if (type == DataUtils.PAGE_TYPE_LEAF) {
             map.getValueType().write(buff, values, len, false);
         }
@@ -767,6 +861,9 @@ public class Page {
                 if (compLen + plus < expLen) {
                     buff.position(typePos).
                         put((byte) (type + compressType));
+                    /*
+                     * 从压缩开始的地方，重新放置数据
+                     */
                     buff.position(compressStart).
                         putVarInt(expLen - compLen).
                         put(comp, 0, compLen);
@@ -778,17 +875,26 @@ public class Page {
         int check = DataUtils.getCheckValue(chunkId)
                 ^ DataUtils.getCheckValue(start)
                 ^ DataUtils.getCheckValue(pageLength);
+        /*
+         * 这里将长度回写回去
+         */
         buff.putInt(start, pageLength).
             putShort(start + 4, (short) check);
         if (pos != 0) {
             throw DataUtils.newIllegalStateException(
                     DataUtils.ERROR_INTERNAL, "Page already stored");
         }
+        /*
+         * 计算page的pos
+         */
         pos = DataUtils.getPagePos(chunkId, start, pageLength, type);
         store.cachePage(pos, this, getMemory());
         if (type == DataUtils.PAGE_TYPE_NODE) {
             // cache again - this will make sure nodes stays in the cache
             // for a longer time
+            /*
+             * 缓存算法：LIRS
+             */
             store.cachePage(pos, this, getMemory());
         }
         long max = DataUtils.getPageMaxLength(pos);
@@ -908,9 +1014,16 @@ public class Page {
     private void recalculateMemory() {
         int mem = DataUtils.PAGE_MEMORY;
         DataType keyType = map.getKeyType();
+        /*
+         * 计算keys占用的内存大小
+         */
         for (int i = 0; i < keys.length; i++) {
             mem += keyType.getMemory(keys[i]);
         }
+        /*
+         * 叶子节点计算，计算values占用的内存大小（叶子节点没有child)
+         * 非叶子节点计算children占用的内存大小
+         */
         if (this.isLeaf()) {
             DataType valueType = map.getValueType();
             for (int i = 0; i < keys.length; i++) {

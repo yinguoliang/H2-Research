@@ -13,14 +13,19 @@ import java.util.HashMap;
  * <p>
  * Chunks are page aligned (each page is usually 4096 bytes).
  * There are at most 67 million (2^26) chunks,
- * each chunk is at most 2 GB large.
+ * each chunk is at most 2 GB large.<br>
+ * <strong>
+ * chunk是以页对齐的，每个页一般为4KB大小<br>
+ * 一个文件最多大约能有6700万个chunk(chunk_id最多26位)<br>
+ * 每个chunk最多2G大小<br>
+ * </strong>
  */
 public class Chunk {
 
     /**
      * The maximum chunk id.
      */
-    public static final int MAX_ID = (1 << 26) - 1;
+    public static final int MAX_ID = (1 << 26) - 1;//约6700万个
 
     /**
      * The maximum length of a chunk header, in bytes.

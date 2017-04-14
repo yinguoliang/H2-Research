@@ -348,6 +348,9 @@ public class FileStore {
         checkPowerOff();
         checkWritingAllowed();
         try {
+            //重新设置file的长度
+            //如果给定的长度大于文件已有的长度，则直接truncate即可
+            //如果给定的长度小于文件已有的长度，不能直接覆盖原文件，否则会丢失数据
             if (newLength > fileLength) {
                 long pos = filePos;
                 file.position(newLength - 1);

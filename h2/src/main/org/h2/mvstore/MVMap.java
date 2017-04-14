@@ -92,7 +92,10 @@ public class MVMap<K, V> extends AbstractMap<K, V>
 
     /**
      * Open this map with the given store and configuration.
-     *
+     * <br>------------------------------------------------------------<br>
+     *  byYYY: 每个数据库对应一个MVStore<br>
+     *  初始化MVMap时，传入MVStore，就将MVMap关联到了一个数据库文件上了<br>
+     *  MVStore在后台有个守护线程,定期的刷变化的map内容到磁盘上
      * @param store the store
      * @param config the configuration
      */
@@ -460,7 +463,9 @@ public class MVMap<K, V> extends AbstractMap<K, V>
      * @return the value or null
      */
     protected Object binarySearch(Page p, Object key) {
+        //YYY:对page做二分搜索,page含有一个keys数组，如果查到了，返回数组下标，否则返回插入点索引
         int x = p.binarySearch(key);
+        //当前页是非叶子节点,则需要到子节点中找数据：非叶子节点的keys数组值的含义是一个索引范围
         if (!p.isLeaf()) {
             if (x < 0) {
                 x = -x - 1;
@@ -470,6 +475,7 @@ public class MVMap<K, V> extends AbstractMap<K, V>
             p = p.getChildPage(x);
             return binarySearch(p, key);
         }
+        //如果当前页是叶子节点，并且找到了key，则返回value
         if (x >= 0) {
             return p.getValue(x);
         }

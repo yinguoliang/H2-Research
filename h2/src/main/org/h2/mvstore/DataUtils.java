@@ -29,147 +29,147 @@ public class DataUtils {
     /**
      * An error occurred while reading from the file.
      */
-    public static final int ERROR_READING_FAILED = 1;
+    public static final int     ERROR_READING_FAILED             = 1;
 
     /**
      * An error occurred when trying to write to the file.
      */
-    public static final int ERROR_WRITING_FAILED = 2;
+    public static final int     ERROR_WRITING_FAILED             = 2;
 
     /**
      * An internal error occurred. This could be a bug, or a memory corruption
      * (for example caused by out of memory).
      */
-    public static final int ERROR_INTERNAL = 3;
+    public static final int     ERROR_INTERNAL                   = 3;
 
     /**
      * The object is already closed.
      */
-    public static final int ERROR_CLOSED = 4;
+    public static final int     ERROR_CLOSED                     = 4;
 
     /**
      * The file format is not supported.
      */
-    public static final int ERROR_UNSUPPORTED_FORMAT = 5;
+    public static final int     ERROR_UNSUPPORTED_FORMAT         = 5;
 
     /**
      * The file is corrupt or (for encrypted files) the encryption key is wrong.
      */
-    public static final int ERROR_FILE_CORRUPT = 6;
+    public static final int     ERROR_FILE_CORRUPT               = 6;
 
     /**
      * The file is locked.
      */
-    public static final int ERROR_FILE_LOCKED = 7;
+    public static final int     ERROR_FILE_LOCKED                = 7;
 
     /**
      * An error occurred when serializing or de-serializing.
      */
-    public static final int ERROR_SERIALIZATION = 8;
+    public static final int     ERROR_SERIALIZATION              = 8;
 
     /**
      * The application was trying to read data from a chunk that is no longer
      * available.
      */
-    public static final int ERROR_CHUNK_NOT_FOUND = 9;
+    public static final int     ERROR_CHUNK_NOT_FOUND            = 9;
 
     /**
      * The block in the stream store was not found.
      */
-    public static final int ERROR_BLOCK_NOT_FOUND = 50;
+    public static final int     ERROR_BLOCK_NOT_FOUND            = 50;
 
     /**
      * The transaction store is corrupt.
      */
-    public static final int ERROR_TRANSACTION_CORRUPT = 100;
+    public static final int     ERROR_TRANSACTION_CORRUPT        = 100;
 
     /**
      * An entry is still locked by another transaction.
      */
-    public static final int ERROR_TRANSACTION_LOCKED = 101;
+    public static final int     ERROR_TRANSACTION_LOCKED         = 101;
 
     /**
      * There are too many open transactions.
      */
-    public static final int ERROR_TOO_MANY_OPEN_TRANSACTIONS = 102;
+    public static final int     ERROR_TOO_MANY_OPEN_TRANSACTIONS = 102;
 
     /**
      * The transaction store is in an illegal state (for example, not yet
      * initialized).
      */
-    public static final int ERROR_TRANSACTION_ILLEGAL_STATE = 103;
+    public static final int     ERROR_TRANSACTION_ILLEGAL_STATE  = 103;
 
     /**
      * The type for leaf page.
      */
-    public static final int PAGE_TYPE_LEAF = 0;
+    public static final int     PAGE_TYPE_LEAF                   = 0;
 
     /**
      * The type for node page.
      */
-    public static final int PAGE_TYPE_NODE = 1;
+    public static final int     PAGE_TYPE_NODE                   = 1;
 
     /**
      * The bit mask for compressed pages (compression level fast).
      */
-    public static final int PAGE_COMPRESSED = 2;
+    public static final int     PAGE_COMPRESSED                  = 2;
 
     /**
      * The bit mask for compressed pages (compression level high).
      */
-    public static final int PAGE_COMPRESSED_HIGH = 2 + 4;
+    public static final int     PAGE_COMPRESSED_HIGH             = 2 + 4;
 
     /**
      * The maximum length of a variable size int.
      */
-    public static final int MAX_VAR_INT_LEN = 5;
+    public static final int     MAX_VAR_INT_LEN                  = 5;
 
     /**
      * The maximum length of a variable size long.
      */
-    public static final int MAX_VAR_LONG_LEN = 10;
+    public static final int     MAX_VAR_LONG_LEN                 = 10;
 
     /**
      * The maximum integer that needs less space when using variable size
      * encoding (only 3 bytes instead of 4).
      */
-    public static final int COMPRESSED_VAR_INT_MAX = 0x1fffff;
+    public static final int     COMPRESSED_VAR_INT_MAX           = 0x1fffff;
 
     /**
-     * The maximum long that needs less space when using variable size
-     * encoding (only 7 bytes instead of 8).
+     * The maximum long that needs less space when using variable size encoding
+     * (only 7 bytes instead of 8).
      */
-    public static final long COMPRESSED_VAR_LONG_MAX = 0x1ffffffffffffL;
+    public static final long    COMPRESSED_VAR_LONG_MAX          = 0x1ffffffffffffL;
 
     /**
      * The estimated number of bytes used per page object.
      */
-    public static final int PAGE_MEMORY = 128;
+    public static final int     PAGE_MEMORY                      = 128;
 
     /**
      * The estimated number of bytes used per child entry.
      */
-    public static final int PAGE_MEMORY_CHILD = 16;
+    public static final int     PAGE_MEMORY_CHILD                = 16;
 
     /**
      * The marker size of a very large page.
      */
-    public static final int PAGE_LARGE = 2 * 1024 * 1024;
+    public static final int     PAGE_LARGE                       = 2 * 1024 * 1024;
 
     /**
      * The UTF-8 character encoding format.
      */
-    public static final Charset UTF8 = Charset.forName("UTF-8");
+    public static final Charset UTF8                             = Charset.forName("UTF-8");
 
     /**
      * The ISO Latin character encoding format.
      */
-    public static final Charset LATIN = Charset.forName("ISO-8859-1");
+    public static final Charset LATIN                            = Charset.forName("ISO-8859-1");
 
     /**
      * An 0-size byte array.
      */
-    private static final byte[] EMPTY_BYTES = {};
+    private static final byte[] EMPTY_BYTES                      = {};
 
     /**
      * Get the length of the variable size int.
@@ -299,8 +299,7 @@ public class DataUtils {
      * @param s the string
      * @param len the number of characters
      */
-    public static void writeStringData(ByteBuffer buff,
-            String s, int len) {
+    public static void writeStringData(ByteBuffer buff, String s, int len) {
         for (int i = 0; i < len; i++) {
             int c = s.charAt(i);
             if (c < 0x80) {
@@ -330,8 +329,7 @@ public class DataUtils {
             if (x < 0x80) {
                 chars[i] = (char) x;
             } else if (x >= 0xe0) {
-                chars[i] = (char) (((x & 0xf) << 12)
-                        + ((buff.get() & 0x3f) << 6) + (buff.get() & 0x3f));
+                chars[i] = (char) (((x & 0xf) << 12) + ((buff.get() & 0x3f) << 6) + (buff.get() & 0x3f));
             } else {
                 chars[i] = (char) (((x & 0x1f) << 6) + (buff.get() & 0x3f));
             }
@@ -359,8 +357,7 @@ public class DataUtils {
      * @param out the output stream
      * @param x the value
      */
-    public static void writeVarLong(OutputStream out, long x)
-            throws IOException {
+    public static void writeVarLong(OutputStream out, long x) throws IOException {
         while ((x & ~0x7f) != 0) {
             out.write((byte) (0x80 | (x & 0x7f)));
             x >>>= 7;
@@ -376,14 +373,16 @@ public class DataUtils {
      * @param oldSize the size of the old array
      * @param gapIndex the index of the gap
      */
-    public static void copyWithGap(Object src, Object dst, int oldSize,
-            int gapIndex) {
+    public static void copyWithGap(Object src, Object dst, int oldSize, int gapIndex) {
+        /*
+         * By YYY: 拷贝数组，并且将gapIndex的位置留下
+         * 算法：先拷贝[0,gapIndex)之间的数据，然后再拷贝(gapIndex,oldSize]之间的数据
+         */
         if (gapIndex > 0) {
             System.arraycopy(src, 0, dst, 0, gapIndex);
         }
         if (gapIndex < oldSize) {
-            System.arraycopy(src, gapIndex, dst, gapIndex + 1, oldSize
-                    - gapIndex);
+            System.arraycopy(src, gapIndex, dst, gapIndex + 1, oldSize - gapIndex);
         }
     }
 
@@ -395,20 +394,18 @@ public class DataUtils {
      * @param oldSize the size of the old array
      * @param removeIndex the index of the entry to remove
      */
-    public static void copyExcept(Object src, Object dst, int oldSize,
-            int removeIndex) {
+    public static void copyExcept(Object src, Object dst, int oldSize, int removeIndex) {
         if (removeIndex > 0 && oldSize > 0) {
             System.arraycopy(src, 0, dst, 0, removeIndex);
         }
         if (removeIndex < oldSize) {
-            System.arraycopy(src, removeIndex + 1, dst, removeIndex, oldSize
-                    - removeIndex - 1);
+            System.arraycopy(src, removeIndex + 1, dst, removeIndex, oldSize - removeIndex - 1);
         }
     }
 
     /**
-     * Read from a file channel until the buffer is full.
-     * The buffer is rewind after reading.
+     * Read from a file channel until the buffer is full. The buffer is rewind
+     * after reading.
      *
      * @param file the file channel
      * @param pos the absolute position within the file
@@ -432,11 +429,8 @@ public class DataUtils {
             } catch (IOException e2) {
                 size = -1;
             }
-            throw newIllegalStateException(
-                    ERROR_READING_FAILED,
-                    "Reading from {0} failed; file length {1} " +
-                    "read length {2} at {3}",
-                    file, size, dst.remaining(), pos, e);
+            throw newIllegalStateException(ERROR_READING_FAILED, "Reading from {0} failed; file length {1} "
+                    + "read length {2} at {3}", file, size, dst.remaining(), pos, e);
         }
     }
 
@@ -455,10 +449,8 @@ public class DataUtils {
                 off += len;
             } while (src.remaining() > 0);
         } catch (IOException e) {
-            throw newIllegalStateException(
-                    ERROR_WRITING_FAILED,
-                    "Writing to {0} failed; length {1} at {2}",
-                    file, src.remaining(), pos, e);
+            throw newIllegalStateException(ERROR_WRITING_FAILED, "Writing to {0} failed; length {1} at {2}", file,
+                    src.remaining(), pos, e);
         }
     }
 
@@ -468,10 +460,16 @@ public class DataUtils {
      * @param len the length
      * @return the length code
      */
+    /*
+     * 将len大小转到对应的合适的块大小
+     */
     public static int encodeLength(int len) {
         if (len <= 32) {
             return 0;
         }
+        /*
+         * numberOfLeadingZeros： 按32位算，计算一个整数的二进制前面有多少个0
+         */
         int code = Integer.numberOfLeadingZeros(len);
         int remaining = len << (code + 1);
         code += code;
@@ -506,13 +504,16 @@ public class DataUtils {
     }
 
     /**
-     * Get the maximum length for the given code.
-     * For the code 31, PAGE_LARGE is returned.
+     * Get the maximum length for the given code. For the code 31, PAGE_LARGE is
+     * returned.
      *
      * @param pos the position
      * @return the maximum length
      */
     public static int getPageMaxLength(long pos) {
+        /*
+         * pos的2~7共6bit，记录了page的最大大小
+         */
         int code = (int) ((pos >> 1) & 31);
         if (code == 31) {
             return PAGE_LARGE;
@@ -544,6 +545,11 @@ public class DataUtils {
      * Get the position of this page. The following information is encoded in
      * the position: the chunk id, the offset, the maximum length, and the type
      * (node or leaf).
+     * <br>============================<br>
+     * <font color=red><strong>
+     * pos含有的信息很丰富
+     * 
+     * </font></strong>
      *
      * @param chunkId the chunk id
      * @param offset the offset
@@ -551,8 +557,14 @@ public class DataUtils {
      * @param type the page type (1 for node, 0 for leaf)
      * @return the position
      */
-    public static long getPagePos(int chunkId, int offset,
-            int length, int type) {
+    public static long getPagePos(int chunkId, int offset, int length, int type) {
+        /*
+         * long字段总共有64位
+         * pos的前26位存放chunk_id(最多约6700万个chunk)
+         * 接下来的33位存放chunk的偏移量(所以每个Chunk最大为2G)
+         * 接下来的6位，存储chunk实际长度的模糊上限
+         * 最后1位，存储page的类型
+         */
         long pos = (long) chunkId << 38;
         pos |= (long) offset << 6;
         pos |= encodeLength(length) << 1;
@@ -579,8 +591,7 @@ public class DataUtils {
      * @param map the map
      * @return the string builder
      */
-    public static StringBuilder appendMap(StringBuilder buff,
-            HashMap<String, ?> map) {
+    public static StringBuilder appendMap(StringBuilder buff, HashMap<String, ?> map) {
         ArrayList<String> list = New.arrayList(map.keySet());
         Collections.sort(list);
         for (String k : list) {
@@ -639,8 +650,7 @@ public class DataUtils {
             int startKey = i;
             i = s.indexOf(':', i);
             if (i < 0) {
-                throw DataUtils.newIllegalStateException(
-                        DataUtils.ERROR_FILE_CORRUPT, "Not a map: {0}", s);
+                throw DataUtils.newIllegalStateException(DataUtils.ERROR_FILE_CORRUPT, "Not a map: {0}", s);
             }
             String key = s.substring(startKey, i++);
             StringBuilder buff = new StringBuilder();
@@ -653,8 +663,7 @@ public class DataUtils {
                         c = s.charAt(i++);
                         if (c == '\\') {
                             if (i == size) {
-                                throw DataUtils.newIllegalStateException(
-                                        DataUtils.ERROR_FILE_CORRUPT,
+                                throw DataUtils.newIllegalStateException(DataUtils.ERROR_FILE_CORRUPT,
                                         "Not a map: {0}", s);
                             }
                             c = s.charAt(i++);
@@ -709,8 +718,7 @@ public class DataUtils {
      * @param arguments the arguments
      * @throws IllegalArgumentException if the argument is invalid
      */
-    public static void checkArgument(boolean test, String message,
-            Object... arguments) {
+    public static void checkArgument(boolean test, String message, Object... arguments) {
         if (!test) {
             throw newIllegalArgumentException(message, arguments);
         }
@@ -723,11 +731,8 @@ public class DataUtils {
      * @param arguments the arguments
      * @return the exception
      */
-    public static IllegalArgumentException newIllegalArgumentException(
-            String message, Object... arguments) {
-        return initCause(new IllegalArgumentException(
-                formatMessage(0, message, arguments)),
-                arguments);
+    public static IllegalArgumentException newIllegalArgumentException(String message, Object... arguments) {
+        return initCause(new IllegalArgumentException(formatMessage(0, message, arguments)), arguments);
     }
 
     /**
@@ -736,8 +741,7 @@ public class DataUtils {
      * @param message the message
      * @return the exception
      */
-    public static UnsupportedOperationException
-            newUnsupportedOperationException(String message) {
+    public static UnsupportedOperationException newUnsupportedOperationException(String message) {
         return new UnsupportedOperationException(formatMessage(0, message));
     }
 
@@ -747,8 +751,7 @@ public class DataUtils {
      * @param message the message
      * @return the exception
      */
-    public static ConcurrentModificationException
-            newConcurrentModificationException(String message) {
+    public static ConcurrentModificationException newConcurrentModificationException(String message) {
         return new ConcurrentModificationException(formatMessage(0, message));
     }
 
@@ -760,11 +763,8 @@ public class DataUtils {
      * @param arguments the arguments
      * @return the exception
      */
-    public static IllegalStateException newIllegalStateException(
-            int errorCode, String message, Object... arguments) {
-        return initCause(new IllegalStateException(
-                formatMessage(errorCode, message, arguments)),
-                arguments);
+    public static IllegalStateException newIllegalStateException(int errorCode, String message, Object... arguments) {
+        return initCause(new IllegalStateException(formatMessage(errorCode, message, arguments)), arguments);
     }
 
     private static <T extends Exception> T initCause(T e, Object... arguments) {
@@ -786,8 +786,7 @@ public class DataUtils {
      * @param arguments the arguments
      * @return the formatted message
      */
-    public static String formatMessage(int errorCode, String message,
-            Object... arguments) {
+    public static String formatMessage(int errorCode, String message, Object... arguments) {
         // convert arguments to strings, to avoid locale specific formatting
         for (int i = 0; i < arguments.length; i++) {
             Object a = arguments[i];
@@ -799,10 +798,8 @@ public class DataUtils {
                 arguments[i] = s;
             }
         }
-        return MessageFormat.format(message, arguments) +
-                " [" + Constants.VERSION_MAJOR + "." +
-                Constants.VERSION_MINOR + "." + Constants.BUILD_ID +
-                "/" + errorCode + "]";
+        return MessageFormat.format(message, arguments) + " [" + Constants.VERSION_MAJOR + "."
+                + Constants.VERSION_MINOR + "." + Constants.BUILD_ID + "/" + errorCode + "]";
     }
 
     /**
@@ -861,8 +858,7 @@ public class DataUtils {
      * @return the parsed value
      * @throws IllegalStateException if parsing fails
      */
-    public static long readHexLong(Map<String, ? extends Object> map,
-            String key, long defaultValue) {
+    public static long readHexLong(Map<String, ? extends Object> map, String key, long defaultValue) {
         Object v = map.get(key);
         if (v == null) {
             return defaultValue;
@@ -872,8 +868,7 @@ public class DataUtils {
         try {
             return parseHexLong((String) v);
         } catch (NumberFormatException e) {
-            throw newIllegalStateException(ERROR_FILE_CORRUPT,
-                    "Error parsing the value {0}", v, e);
+            throw newIllegalStateException(ERROR_FILE_CORRUPT, "Error parsing the value {0}", v, e);
         }
     }
 
@@ -889,13 +884,11 @@ public class DataUtils {
             if (x.length() == 16) {
                 // avoid problems with overflow
                 // in Java 8, this special case is not needed
-                return (Long.parseLong(x.substring(0, 8), 16) << 32) |
-                        Long.parseLong(x.substring(8, 16), 16);
+                return (Long.parseLong(x.substring(0, 8), 16) << 32) | Long.parseLong(x.substring(8, 16), 16);
             }
             return Long.parseLong(x, 16);
         } catch (NumberFormatException e) {
-            throw newIllegalStateException(ERROR_FILE_CORRUPT,
-                    "Error parsing the value {0}", x, e);
+            throw newIllegalStateException(ERROR_FILE_CORRUPT, "Error parsing the value {0}", x, e);
         }
     }
 
@@ -912,8 +905,7 @@ public class DataUtils {
             // in Java 8, we can use Integer.parseLong(x, 16);
             return (int) Long.parseLong(x, 16);
         } catch (NumberFormatException e) {
-            throw newIllegalStateException(ERROR_FILE_CORRUPT,
-                    "Error parsing the value {0}", x, e);
+            throw newIllegalStateException(ERROR_FILE_CORRUPT, "Error parsing the value {0}", x, e);
         }
     }
 
@@ -926,8 +918,7 @@ public class DataUtils {
      * @return the parsed value
      * @throws IllegalStateException if parsing fails
      */
-    public static int readHexInt(HashMap<String, ? extends Object> map,
-            String key, int defaultValue) {
+    public static int readHexInt(HashMap<String, ? extends Object> map, String key, int defaultValue) {
         Object v = map.get(key);
         if (v == null) {
             return defaultValue;
@@ -938,8 +929,7 @@ public class DataUtils {
             // support unsigned hex value
             return (int) Long.parseLong((String) v, 16);
         } catch (NumberFormatException e) {
-            throw newIllegalStateException(ERROR_FILE_CORRUPT,
-                    "Error parsing the value {0}", v, e);
+            throw newIllegalStateException(ERROR_FILE_CORRUPT, "Error parsing the value {0}", v, e);
         }
     }
 
@@ -952,7 +942,7 @@ public class DataUtils {
     public static class MapEntry<K, V> implements Map.Entry<K, V> {
 
         private final K key;
-        private V value;
+        private V       value;
 
         public MapEntry(K key, V value) {
             this.key = key;
@@ -971,8 +961,7 @@ public class DataUtils {
 
         @Override
         public V setValue(V value) {
-            throw DataUtils.newUnsupportedOperationException(
-                    "Updating the value is not supported");
+            throw DataUtils.newUnsupportedOperationException("Updating the value is not supported");
         }
 
     }

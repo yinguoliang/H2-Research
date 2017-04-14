@@ -22,13 +22,13 @@ public class FileStoreTest {
         MyDataHandler dh = new MyDataHandler();
         String mode = null;
         mode = "rw";
-        name = "E:\\H2\\tmp\\FileStoreTest\\my.txt";
+        name = "D:\\H2\\tmp\\FileStoreTest\\my.txt";
         //name = "file:E:\\H2\\tmp\\FileStoreTest\\my.txt";
         //name = "cache:E:\\H2\\tmp\\FileStoreTest\\my.txt";
 
-        name = "memFS:E:\\H2\\tmp\\FileStoreTest\\my.txt";
+        name = "memFS:D:\\H2\\tmp\\FileStoreTest\\my.txt";
 
-        System.setProperty("user.home", "E:/H2/tmp");
+        System.setProperty("user.home", "D:/H2/tmp");
         name = "~";
         name = "file:~/FileStoreTest/my.txt";
 

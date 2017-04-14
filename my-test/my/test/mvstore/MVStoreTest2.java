@@ -41,7 +41,7 @@ public class MVStoreTest2 {
 
     MVStore store;
     MVMap<String, String> map;
-    String fileName = "./target/mvstore-test/MVStoreTest1.mv.db";
+    String fileName = "d:/h2/mvstoretest2.db";
 
     void initMVStore() {
         Builder builder = new Builder();

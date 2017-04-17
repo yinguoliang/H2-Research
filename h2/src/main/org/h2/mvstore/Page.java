@@ -19,6 +19,9 @@ import org.h2.util.New;
  * B树的Node节点<br>
  * 因为是B树，所以非叶子节点也存储数据<br>
  * 因此page定义了三个属性keys,values,children
+ * <br>--------------------------------<br>
+ * page存储在chunk中,每个page的大小是固定的
+ * <br>-------------------------------<br>
  * </strong></font>
  * <p>
  * For b-tree nodes, the key at a given index is larger than the largest key of
@@ -836,6 +839,9 @@ public class Page {
         map.getKeyType().write(buff, keys, len, true); //第4个参数目前未使用
         //9. 将values写入buff
         if (type == DataUtils.PAGE_TYPE_LEAF) {
+            /*
+             * 会根据values的不同类型，调用不同的处理器来写入buff
+             */
             map.getValueType().write(buff, values, len, false);
         }
         MVStore store = map.getStore();

@@ -940,6 +940,8 @@ public class Page {
         if (!isLeaf()) {
             int len = children.length;
             for (int i = 0; i < len; i++) {
+            	// 如果B树节点的子节点有变化，那变化的节点一定在内存中，接page != null
+            	// 对于没有变化的子节点page == null (但是pos不为空)
                 Page p = children[i].page;
                 if (p != null) {
                     p.writeUnsavedRecursive(chunk, buff);

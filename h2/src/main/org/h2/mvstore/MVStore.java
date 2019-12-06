@@ -286,6 +286,24 @@ public class MVStore {
      * @throws IllegalArgumentException if the directory does not exist
      */
     MVStore(HashMap<String, Object> config) {
+    	/*
+    	 * 一个MVStore代表一个磁盘文件（如果有的话）
+    	 * 
+    	 * MVStore首先要从磁盘中读取最新的chunk
+    	 * 
+    	 * 然后从chunk中读取meta这棵树
+    	 * 
+    	 * meta中存储着整个数据库中表（其他树）的元数据
+    	 * 其实只要有meta这个数据，基本上就能找到所有的关于数据库的信息了
+    	 * 
+    	 * chunk header中有个root字段，记录的是meta这个数据在文件中的位置
+    	 * 注意:MVMap也有一个root字段（Page类型），而meta也是一个MVMap
+    	 * 		这一这两个root的含义：chunk header中root是一个数字，代表meta在文件中的pos
+    	 * 						而MVMap中的root是一个Page资源，代表一棵树的root节点
+    	 * 						在初始化meta的时候，会将chunk header中的root读取出来给meta.root
+    	 * 						(参考setLastChunk函数)
+    	 * 
+    	 */
         Object o = config.get("compress");
         this.compressionLevel = o == null ? 0 : (Integer) o;
         String fileName = (String) config.get("fileName");
@@ -297,6 +315,10 @@ public class MVStore {
         }
         o = config.get("backgroundExceptionHandler");
         this.backgroundExceptionHandler = (UncaughtExceptionHandler) o;
+        /*
+         * 构建meta对象，每个MVStore对对应一棵树，用来保存meta数据
+         * meta这棵树随着数据的变化，会写入最新的chunk中（根节点）
+         */
         meta = new MVMap<String, String>(StringDataType.INSTANCE, StringDataType.INSTANCE);
         HashMap<String, Object> c = New.hashMap();
         c.put("id", 0);
@@ -434,8 +456,8 @@ public class MVStore {
      */
     public synchronized <M extends MVMap<K, V>, K, V> M openMap(String name, MVMap.MapBuilder<M, K, V> builder) {
         checkOpen();
-        //byYYY:判断表(mvmap)是否已经存在，如果存在，则返回已有的map
-        //meta是单独的数据空间，专门储存元数据
+        // meta保存了整个数据库的元数据，在打开数据库（文件）的时候，会从最新的chunk中读取出来
+        // 因此这里可以从meta中读取数据库中已存在关于当前name的map信息，当然也可能不存在
         String x = meta.get("name." + name);
         int id;
         long root;
@@ -455,6 +477,8 @@ public class MVStore {
             c.putAll(DataUtils.parseMap(config));
             c.put("id", id);
             map.init(this, c);
+            // 读取目标map的跟节点所在的root pos（meta维护的关于map的数据）
+            // 注意在H2的设计中，meta可以取到基本上我们需要的所有关于map的必要信息（除了具体数据）
             root = getRootPos(meta, id);
         } else {
             c = New.hashMap();
@@ -563,7 +587,7 @@ public class MVStore {
         ByteBuffer fileHeaderBlocks = fileStore.readFully(0, 2 * BLOCK_SIZE);
         byte[] buff = new byte[BLOCK_SIZE];
         for (int i = 0; i <= BLOCK_SIZE; i += BLOCK_SIZE) {
-            fileHeaderBlocks.get(buff);
+            fileHeaderBlocks.get(buff); // 读取第一个header block
             // the following can fail for various reasons
             try {
                 String s = new String(buff, 0, BLOCK_SIZE, DataUtils.LATIN).trim();
@@ -676,18 +700,25 @@ public class MVStore {
     private void loadChunkMeta() {
         // load the chunk metadata: we can load in any order,
         // because loading chunk metadata might recursively load another chunk
+    	printMeta();
         for (Iterator<String> it = meta.keyIterator("chunk."); it.hasNext();) {
+        	System.out.println();
             String s = it.next();
+            System.out.println("【loadChunkMeta】从meta中遍历到"+s);
             if (!s.startsWith("chunk.")) {
                 break;
             }
+            String old = s;
             s = meta.get(s);
+            System.out.println("【loadChunkMeta】从meta中获取到"+old+"的值"+s);
             Chunk c = Chunk.fromString(s);
+            System.out.println("【loadChunkMeta】构建chunk " + c);
             if (!chunks.containsKey(c.id)) {
                 if (c.block == Long.MAX_VALUE) {
                     throw DataUtils
                             .newIllegalStateException(DataUtils.ERROR_FILE_CORRUPT, "Chunk {0} is invalid", c.id);
                 }
+                System.out.println("【loadChunkMeta】加载chunk " + c +" 到内存中");
                 chunks.put(c.id, c);
             }
         }
@@ -703,7 +734,11 @@ public class MVStore {
         } else {
             lastMapId = last.mapId;
             currentVersion = last.version;
+            System.out.println("【setLastChunk】加载chunk " + last +" 到内存中");
             chunks.put(last.id, last);
+            // lastChunk中的metaRootPos表示meta在磁盘中的位置
+            // 我们需要将它从磁盘中读取出来，赋给meta.root字段(page类型）
+            // 注意：对于BTree，只要读取root节点就可以了，再所搜树的时候，会根据需要读取子节点
             meta.setRootPos(last.metaRootPos, -1);
         }
         setWriteVersion(currentVersion);
@@ -943,6 +978,7 @@ public class MVStore {
             if (c.block == Long.MAX_VALUE) {
                 throw DataUtils.newIllegalStateException(DataUtils.ERROR_FILE_CORRUPT, "Chunk {0} is invalid", chunkId);
             }
+            System.out.println("【getChunkIfFound】加载chunk " + c +" 到内存中");
             chunks.put(c.id, c);
         }
         return c;
@@ -1085,6 +1121,7 @@ public class MVStore {
         c.version = version;
         c.mapId = lastMapId;
         c.next = Long.MAX_VALUE;
+        System.out.println("【storeNowTry】加载chunk " + c +" 到内存中");
         chunks.put(c.id, c);
         // force a metadata update
         meta.put(Chunk.getMetaKey(c.id), c.asString());
@@ -1117,6 +1154,8 @@ public class MVStore {
         c.pageCountLive = 0;
         c.maxLen = 0;
         c.maxLenLive = 0;
+        // 注意每个MVMap代表一个B tree
+        // 这里对每个变化的数，都将变化的节点写到buff中
         for (MVMap<?, ?> m : changed) {
             Page p = m.getRoot();
             String key = MVMap.getMapRootKey(m.getId());
@@ -1125,14 +1164,20 @@ public class MVStore {
             } else {
                 p.writeUnsavedRecursive(c, buff);
                 long root = p.getPos();
+                // meta中以root.mapid = pos来记录btree根节点在那个chunk中
                 meta.put(key, Long.toHexString(root));
             }
         }
         meta.setWriteVersion(version);
 
+        // 将meta树也存到chunk中
         Page metaRoot = meta.getRoot();
         metaRoot.writeUnsavedRecursive(c, buff);
-
+        /*
+         * 到目前为止，我们已经往buff中写入了所有的变化的树节点
+         * 
+         * 理论上内存中的变化都已经序列化完毕，下面的工作就是将变化保存到chunk
+         */
         int chunkLength = buff.position();
 
         // add the store header and round to the next block
@@ -1171,17 +1216,23 @@ public class MVStore {
             // just after this chunk
             c.next = 0;
         }
+        // 定位到开头，注意headerLength,buff申请初期会写入一个空的header, 然后记录了header的length
         buff.position(0);
+        // 完善header的内容
         c.writeChunkHeader(buff, headerLength);
         revertTemp(storeVersion);
 
         buff.position(buff.limit() - Chunk.FOOTER_LENGTH);
         buff.put(c.getFooterBytes());
 
+        // 写入文件
         buff.position(0);
         write(filePos, buff.getBuffer());
         releaseWriteBuffer(buff);
-
+        /**************************************************
+         * 截止到此，内存中的变化内容都已经刷到文件系统中了
+         * 
+         **************************************************/
         // whether we need to write the store header
         boolean writeStoreHeader = false;
         if (!storeAtEndOfFile) {
@@ -1216,12 +1267,21 @@ public class MVStore {
 
         lastChunk = c;
         if (writeStoreHeader) {
+        	// 刷新文件header内容，
+        	// 文件header包括两个block，包含了最新的chunk/version
             writeStoreHeader();
         }
         if (!storeAtEndOfFile) {
             // may only shrink after the store header was written
             shrinkFileIfPossible(1);
         }
+        /*
+         * writeEnd:
+         * 	处理内存中Page节点。
+         * 	注意：当节点发生变化时，会将整个page内容都加载到内存中，这非常耗内存。
+         * 		所以当内存中的内容刷到磁盘上时，内存内容就没有必要了
+         * 		因此要将内存的page内容置null，同时用pos取代page引用
+         */
         for (MVMap<?, ?> m : changed) {
             Page p = m.getRoot();
             if (p.getTotalCount() > 0) {
@@ -2144,6 +2204,7 @@ public class MVStore {
                         return false;
                     }
                     // we store this chunk
+                    System.out.println("【isKnownVersion】加载chunk " + c2 +" 到内存中");
                     chunks.put(c2.id, c2);
                 }
             }
@@ -2886,6 +2947,16 @@ public class MVStore {
             return builder;
         }
 
+    }
+    
+    public void printMeta(){
+    	System.out.println("****************************打印metadata：开始*********************************");
+    	for (Iterator<String> it = meta.keyIterator(""); it.hasNext();) {
+    		String key = it.next();
+    		String val =  meta.get(key);
+    		System.out.println("【printMeta】" + key +" = "+ val);
+    	}
+    	System.out.println("****************************打印metadata：结束*********************************");
     }
 
 }

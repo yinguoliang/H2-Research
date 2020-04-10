@@ -179,14 +179,14 @@ public class MVStore {
     /**
      * The map of chunks.
      */
-    private final ConcurrentHashMap<Integer, Chunk>                chunks              = new ConcurrentHashMap<Integer, Chunk>();
+    private final ConcurrentHashMap<Integer, Chunk>                chunks              = new ConcurrentHashMap<>();
 
     /**
      * The map of temporarily freed storage space caused by freed pages. The key
      * is the unsaved version, the value is the map of chunks. The maps contains
      * the number of freed entries per chunk. Access is synchronized.
      */
-    private final ConcurrentHashMap<Long, HashMap<Integer, Chunk>> freedPageSpace      = new ConcurrentHashMap<Long, HashMap<Integer, Chunk>>();
+    private final ConcurrentHashMap<Long, HashMap<Integer, Chunk>> freedPageSpace      = new ConcurrentHashMap<>();
 
     /**
      * The metadata map. Write access to this map needs to be synchronized on
@@ -194,7 +194,7 @@ public class MVStore {
      */
     private MVMap<String, String>                                  meta;
 
-    private final ConcurrentHashMap<Integer, MVMap<?, ?>>          maps                = new ConcurrentHashMap<Integer, MVMap<?, ?>>();
+    private final ConcurrentHashMap<Integer, MVMap<?, ?>>          maps                = new ConcurrentHashMap<>();
 
     private HashMap<String, Object>                                storeHeader         = New.hashMap();
 
@@ -364,6 +364,11 @@ public class MVStore {
                 creationTime = getTimeAbsolute();
                 lastCommitTime = creationTime;
                 storeHeader.put("H", 2);
+                /*
+                * 备注： blockSize: 块大小（4K）
+                * 注意： h2中，无论是chunk还是page都是不固定大小的，block的意义在于chunk/page都会按照blockSize对齐。
+                * 注2：内容对齐是一种隐含的设计，在必要的时候，代码是默认内容对齐的，所以只要读取block size大小的内容，就能保证内容完整
+                 */
                 storeHeader.put("blockSize", BLOCK_SIZE);
                 storeHeader.put("format", FORMAT_WRITE);
                 storeHeader.put("created", creationTime);
@@ -610,6 +615,10 @@ public class MVStore {
                     validStoreHeader = true;
                     storeHeader.putAll(m);
                     creationTime = DataUtils.readHexLong(m, "created", 0);
+                    // last chunk 位置
+                    // last chunk是每次刷盘时，刷到磁盘中的最新的chunk
+                    // last chunk中包含meta信息，参考 storeNowTry
+                    // 实际上，meta信息总是在chunk开头位置
                     int chunkId = DataUtils.readHexInt(m, "chunk", 0);
                     long block = DataUtils.readHexLong(m, "block", 0);
                     Chunk test = readChunkHeaderAndFooter(block);
@@ -936,7 +945,7 @@ public class MVStore {
     /**
      * Whether the chunk at the given position is live.
      *
-     * @param the chunk id
+     * @param chunkId the chunk id
      * @return true if it is live
      */
     boolean isChunkLive(int chunkId) {
@@ -970,6 +979,8 @@ public class MVStore {
                 throw DataUtils.newIllegalStateException(DataUtils.ERROR_CHUNK_NOT_FOUND, "Chunk {0} no longer exists",
                         chunkId);
             }
+            // 从mata中获取chunk元信息
+            // 注： chunk原信息都【独立】存储在meta中
             String s = meta.get(Chunk.getMetaKey(chunkId));
             if (s == null) {
                 return null;

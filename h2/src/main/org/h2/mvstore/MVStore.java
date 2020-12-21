@@ -298,7 +298,7 @@ public class MVStore {
     	 * 
     	 * chunk header中有个root字段，记录的是meta这个数据在文件中的位置
     	 * 注意:MVMap也有一个root字段（Page类型），而meta也是一个MVMap
-    	 * 		这一这两个root的含义：chunk header中root是一个数字，代表meta在文件中的pos
+    	 * 		这一这两个root的含义：chunk header中root是一个LONG数字，这个long值不同部分代表不同含义，整体可以定位一个chunk位置
     	 * 						而MVMap中的root是一个Page资源，代表一棵树的root节点
     	 * 						在初始化meta的时候，会将chunk header中的root读取出来给meta.root
     	 * 						(参考setLastChunk函数)
